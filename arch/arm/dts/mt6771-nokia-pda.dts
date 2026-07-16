@@ -1,0 +1,232 @@
+/dts-v1/;
+#include <config.h>
+#include "mt8183.dtsi"
+#include "mt8183-pinfunc.h"
+
+/ {
+	model = "HMD Global Nokia X5";
+	compatible = "nokia,pda", "mediatek,mt6771";
+
+	memory@40000000 {
+		device_type = "memory";
+		reg = <0 0x40000000 0 0x80000000>;
+	};
+
+	framebuffer {
+		compatible = "simple-framebuffer";
+		reg = <0 0x7bdf0000 0 (736 * 1520 * 4)>;
+		width = <736>;
+		height = <1520>;
+		stride = <(736 * 4)>;
+		format = "a8r8g8b8";
+		status = "okay";
+	};
+
+	kpd: keypad@10010000 {
+		compatible = "mediatek,mt6771-kpd";
+		reg = <0 0x10010000 0 0x1000>;
+		/* PMIC pwrkey
+		 * vol+ pmic homekey
+		 * vol- kpd
+		 */
+		mediatek,have-kpd-down;
+		mediatek,kpd-down-bit = <0>;
+		mediatek,have-pmic-up;
+	};
+
+	reg_1p8v: regulator-1p8v {
+		compatible = "regulator-fixed";
+		regulator-name = "fixed-1.8V";
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
+	reg_3p3v: regulator-3p3v {
+		compatible = "regulator-fixed";
+		regulator-name = "fixed-3.3V";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+};
+
+&pwrap {
+	pmic: pmic {
+		compatible = "mediatek,mt6358";
+		interrupt-controller;
+		#interrupt-cells = <2>;
+
+		mt6358regulator: regulators {
+			compatible = "mediatek,mt6358-regulator";
+
+			/* sd card regulators */
+			mt6358_vmch_reg: ldo_vmch {
+				regulator-name = "vmch";
+				regulator-min-microvolt = <2900000>;
+				regulator-max-microvolt = <3300000>;
+			};
+
+			mt6358_vmc_reg: ldo_vmc {
+				regulator-name = "vmc";
+				regulator-min-microvolt = <1800000>;
+				regulator-max-microvolt = <3300000>;
+			};
+		};
+	};
+};
+/*
+&uart0 {
+	status = "okay";
+};
+ */
+&usb {
+	status = "okay";
+};
+
+&u2port0 {
+	mediatek,pre-emphasis = <3>;
+};
+
+&usb {
+	mediatek,u3p-dis-msk = <1>;
+	mediatek,force-vbus;
+	maximum-speed = "high-speed";
+	dr_mode = "peripheral";
+	status = "okay";
+};
+
+&mmc0 {
+	/* NOTE: no proper hs400 support in driver. */
+	status = "okay";
+	pinctrl-names = "default", "state_uhs";
+	pinctrl-0 = <&mmc0_pins_default>;
+	pinctrl-1 = <&mmc0_pins_uhs>;
+	mmc-hs200-1_8v;
+	bus-width = <4>;
+	max-frequency = <200000000>;
+	cap-mmc-highspeed;
+	cap-mmc-hw-reset;
+	vmmc-supply = <&reg_3p3v>;
+	vqmmc-supply = <&reg_1p8v>;
+	assigned-clocks = <&topckgen CLK_TOP_MUX_MSDC50_0>;
+	assigned-clock-parents = <&topckgen CLK_TOP_MSDCPLL_CK>;
+	non-removable;
+};
+
+&mmc1 {
+	/* NOTE: writing anything in sdr104 fails (driver issue).
+	 * drop the speed down with mmc dev 1 0 6
+	 */
+	pinctrl-names = "default", "state_uhs";
+	pinctrl-0 = <&mmc1_pins_default>;
+	pinctrl-1 = <&mmc1_pins_default>;
+	bus-width = <4>;
+	max-frequency = <200000000>;
+	sd-uhs-sdr12;
+	sd-uhs-sdr25;
+	sd-uhs-sdr50;
+	sd-uhs-sdr104;
+	cap-sd-highspeed;
+	vmmc-supply = <&mt6358_vmch_reg>;
+	vqmmc-supply = <&mt6358_vmc_reg>;
+	assigned-clocks = <&topckgen CLK_TOP_MUX_MSDC30_1>;
+	assigned-clock-parents = <&topckgen CLK_TOP_MSDCPLL_D2>;
+	cd-debounce-delay-ms = <0>;
+	cd-gpios = <&pio 3 GPIO_ACTIVE_HIGH>;
+	status = "okay";
+};
+
+&pio {
+	mmc0_pins_default: mmc0-pins-default {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO123__FUNC_MSDC0_DAT0>,
+			         <PINMUX_GPIO128__FUNC_MSDC0_DAT1>,
+			         <PINMUX_GPIO125__FUNC_MSDC0_DAT2>,
+			         <PINMUX_GPIO132__FUNC_MSDC0_DAT3>,
+			         <PINMUX_GPIO126__FUNC_MSDC0_DAT4>,
+			         <PINMUX_GPIO129__FUNC_MSDC0_DAT5>,
+			         <PINMUX_GPIO127__FUNC_MSDC0_DAT6>,
+			         <PINMUX_GPIO130__FUNC_MSDC0_DAT7>,
+			         <PINMUX_GPIO122__FUNC_MSDC0_CMD>;
+			input-enable;
+			drive-strength = <6>;
+			bias-pull-up = <MTK_PUPD_SET_R1R0_01>;
+		};
+
+		pins-clk {
+			pinmux = <PINMUX_GPIO124__FUNC_MSDC0_CLK>;
+			drive-strength = <6>;
+			bias-pull-down = <MTK_PUPD_SET_R1R0_10>;
+		};
+
+		pins-rst {
+			pinmux = <PINMUX_GPIO133__FUNC_MSDC0_RSTB>;
+			drive-strength = <6>;
+			bias-pull-up = <MTK_PUPD_SET_R1R0_00>;
+		};
+
+		pins-ds {
+			pinmux = <PINMUX_GPIO131__FUNC_MSDC0_DSL>;
+			drive-strength = <MTK_DRIVE_14mA>;
+			bias-pull-down;
+		};
+	};
+
+	mmc0_pins_uhs: mmc0-pins-uhs {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO123__FUNC_MSDC0_DAT0>,
+			         <PINMUX_GPIO128__FUNC_MSDC0_DAT1>,
+			         <PINMUX_GPIO125__FUNC_MSDC0_DAT2>,
+			         <PINMUX_GPIO132__FUNC_MSDC0_DAT3>,
+			         <PINMUX_GPIO126__FUNC_MSDC0_DAT4>,
+			         <PINMUX_GPIO129__FUNC_MSDC0_DAT5>,
+			         <PINMUX_GPIO127__FUNC_MSDC0_DAT6>,
+			         <PINMUX_GPIO130__FUNC_MSDC0_DAT7>,
+			         <PINMUX_GPIO122__FUNC_MSDC0_CMD>;
+			input-enable;
+			drive-strength = <MTK_DRIVE_8mA>;
+			bias-pull-up;
+		};
+
+		pins-clk {
+			pinmux = <PINMUX_GPIO124__FUNC_MSDC0_CLK>;
+			drive-strength = <MTK_DRIVE_14mA>;
+			bias-pull-up;
+		};
+
+		pins-rst {
+			pinmux = <PINMUX_GPIO133__FUNC_MSDC0_RSTB>;
+			drive-strength = <MTK_DRIVE_14mA>;
+			bias-pull-up;
+		};
+
+		pins-ds {
+			pinmux = <PINMUX_GPIO131__FUNC_MSDC0_DSL>;
+			drive-strength = <MTK_DRIVE_14mA>;
+			bias-pull-down;
+		};
+	};
+
+	mmc1_pins_default: mmc1-pins-default {
+		pins-cmd-dat {
+			pinmux = <PINMUX_GPIO31__FUNC_MSDC1_CMD>,
+			         <PINMUX_GPIO32__FUNC_MSDC1_DAT0>,
+			         <PINMUX_GPIO34__FUNC_MSDC1_DAT1>,
+			         <PINMUX_GPIO33__FUNC_MSDC1_DAT2>,
+			         <PINMUX_GPIO30__FUNC_MSDC1_DAT3>;
+			input-enable;
+			drive-strength = <MTK_DRIVE_10mA>;
+			bias-pull-up;
+		};
+
+		pins-clk {
+			pinmux = <PINMUX_GPIO29__FUNC_MSDC1_CLK>;
+			input-enable;
+			drive-strength = <MTK_DRIVE_10mA>;
+			bias-pull-up;
+		};
+	};
+};

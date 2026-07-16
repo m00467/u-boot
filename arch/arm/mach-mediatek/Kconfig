@@ -1,4 +1,14 @@
 if ARCH_MEDIATEK
+menu "mt6771 plat"
+    depends on ARCH_MEDIATEK
+    choice
+        prompt "select board"
+        depends on TARGET_MT6771
+
+        config NOKIA_PDA
+            bool "Nokia 5.1 Plus/X5 support"
+    endchoice
+endmenu
 
 config SYS_SOC
 	default "mediatek"
@@ -8,6 +18,10 @@ config SYS_VENDOR
 
 choice
 	prompt "MediaTek board select"
+
+config TARGET_MT6771
+    	bool "MediaTek MT6771 SoC"
+    	select ARM64
 
 config TARGET_MT7622
 	bool "MediaTek MT7622 SoC"
@@ -195,6 +209,7 @@ config SYS_BOARD
 	  be used.
 
 config SYS_CONFIG_NAME
+    	default "mt6771" if TARGET_MT6771
 	default "mt7623" if TARGET_MT7623
 	default "mt7629" if TARGET_MT7629
 	default "mt7981" if TARGET_MT7981

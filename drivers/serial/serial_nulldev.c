@@ -26,6 +26,19 @@ static int nulldev_serial_putc(struct udevice *dev, const char ch)
 	return 0;
 }
 
+static void null_setbrg(void){}
+static int null_init(void){return 0;}
+static struct serial_device nulldev_serial_device = {
+	.name = "nulldev",
+	.start = null_init,
+	.stop = NULL,
+	.setbrg = null_setbrg
+};
+__weak struct serial_device *default_serial_console(void)
+{
+	return &nulldev_serial_device;
+}
+
 static const struct udevice_id nulldev_serial_ids[] = {
 	{ .compatible = "nulldev-serial" },
 	{ }
