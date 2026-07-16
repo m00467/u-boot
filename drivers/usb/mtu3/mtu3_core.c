@@ -100,7 +100,8 @@ static int mtu3_device_enable(struct mtu3 *mtu)
 		     (SSUSB_U2_PORT_DIS | SSUSB_U2_PORT_PDN |
 		      SSUSB_U2_PORT_HOST_SEL));
 
-	return ssusb_check_clocks(mtu->ssusb, check_clk);
+	//return ssusb_check_clocks(mtu->ssusb, check_clk);
+	return 0;
 }
 
 static void mtu3_device_disable(struct mtu3 *mtu)
